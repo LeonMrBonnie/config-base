@@ -23,7 +23,7 @@ namespace GenericConfig
 			LIST,
 			DICT
 		};
-		using None = nullptr_t;
+		using None = std::nullptr_t;
 		using String = std::string;
 		using Bool = bool;
 		using Number = double;
@@ -34,7 +34,7 @@ namespace GenericConfig
 		Value(Value&& _value) : type(_value.type), value(_value.value) {}
 		Value(const Value& _value) : type(_value.type), value(_value.value) {}
 		Value(Type _type, Any _value) : type(_type), value(_value) {}
-		Value(nullptr_t _value) : type(Type::NONE), value(_value) {}
+		Value(std::nullptr_t _value) : type(Type::NONE), value(_value) {}
 		Value(String& _value) : type(Type::STRING), value(_value) {}
 		Value(const char* _value) : type(Type::STRING), value(_value) {}
 		Value(Bool _value) : type(Type::BOOL), value(_value) {}
