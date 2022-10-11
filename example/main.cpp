@@ -12,26 +12,26 @@ using namespace GenericConfig;
 class AltConfig : public ConfigBase<AltConfig>
 {
 public:
-    static Value ToValue(alt::config::Node& node)
+    static ValuePtr ToValue(alt::config::Node& node)
     {
         if (node.IsScalar())
         {
 	        try
 	        {
                 double value = node.ToNumber();
-                return Value(value);
+                return std::make_shared<Value>(value);
 	        }
             catch(...)
             {
                 try
                 {
                     bool value = node.ToBool();
-                    return Value(value);
+                    return std::make_shared<Value>(value);
                 }
                 catch(...)
                 {
                     std::string value = node.ToString();
-                    return Value(value);
+                    return std::make_shared<Value>(value);
                 }
             }
         }
@@ -40,20 +40,26 @@ public:
             auto& list = node.ToList();
             Value::List value;
             value.reserve(list.size());
-            for(auto& node : list) value.push_back(ToValue(*node));
-            return Value(value);
+            for (auto& node : list)
+            {
+                value.push_back(ToValue(*node));
+            }
+            return std::make_shared<Value>(value);
         }
         if (node.IsDict())
         {
             auto& dict = node.ToDict();
             Value::Dict value;
-            for (auto& pair : dict) value.insert({ pair.first, ToValue(*pair.second)});
-            return Value(value);
+            for (auto& pair : dict)
+            {
+                value.insert({ pair.first, ToValue(*pair.second) });
+            }
+            return std::make_shared<Value>(value);
         }
-        return Value(nullptr);
+        return std::make_shared<Value>(nullptr);
     }
 
-    static Value Parse(const std::string& input)
+    static ValuePtr Parse(const std::string& input)
     {
         try
         {
@@ -62,7 +68,7 @@ public:
         }
         catch(...)
         {
-            return Value(nullptr);
+            return std::make_shared<Value>(nullptr);
         }
     }
 };
@@ -70,22 +76,22 @@ public:
 class TomlConfig : public ConfigBase<TomlConfig>
 {
 public:
-    static Value ToValue(toml::node* node)
+    static ValuePtr ToValue(toml::node* node)
     {
 	    if(node->is_string())
 	    {
-            return Value(node->as_string()->get());
+            return std::make_shared<Value>(node->as_string()->get());
 	    }
         if(node->is_number())
         {
             double val;
             if (node->is_integer()) val = node->as_integer()->get();
             else val = node->as_floating_point()->get();
-            return Value(val);
+            return std::make_shared<Value>(val);
         }
         if(node->is_boolean())
         {
-            return Value(node->as_boolean()->get());
+            return std::make_shared<Value>(node->as_boolean()->get());
         }
         if(node->is_array())
         {
@@ -95,7 +101,7 @@ public:
             {
                 value.push_back(ToValue(list->get(i)));
             }
-            return Value(value);
+            return std::make_shared<Value>(value);
         }
         if(node->is_table())
         {
@@ -103,15 +109,14 @@ public:
             auto dict = node->as_table();
             for(auto it = dict->begin(); it != dict->end(); ++it)
             {
-                auto node = &it->second;
-                value.insert({ it->first.data(), ToValue(node) });
+                value.insert({ it->first.data(), ToValue(&it->second) });
             }
-            return Value(value);
+            return std::make_shared<Value>(value);
         }
-        return Value(nullptr);
+        return std::make_shared<Value>(nullptr);
     }
 
-    static Value Parse(const std::string& input)
+    static ValuePtr Parse(const std::string& input)
     {
         try 
         {
@@ -120,7 +125,7 @@ public:
         }
         catch(...)
         {
-            return Value(nullptr);
+            return std::make_shared<Value>(nullptr);
         }
     }
 };
@@ -176,16 +181,16 @@ int main(int, char**)
 {
     {
         std::cout << "Parsing alt-config file..." << std::endl;
-        Value config = AltConfig::Parse(altConfigFile);
-        std::cout << config.ToString(true) << std::endl;
-        PrintConfigValues(config);
+        std::shared_ptr<Value> config = AltConfig::Parse(altConfigFile);
+        std::cout << config->ToString(true) << std::endl;
+        PrintConfigValues(*config);
     }
 
     {
         std::cout << "Parsing toml file..." << std::endl;
-        Value config = TomlConfig::Parse(tomlConfigFile);
-        std::cout << config.ToString(true) << std::endl;
-        PrintConfigValues(config);
+        std::shared_ptr<Value> config = TomlConfig::Parse(tomlConfigFile);
+        std::cout << config->ToString(true) << std::endl;
+        PrintConfigValues(*config);
     }
 
 	return 0;

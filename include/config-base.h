@@ -5,6 +5,7 @@
 #include <variant>
 #include <vector>
 #include <map>
+#include <memory>
 
 namespace GenericConfig
 {
@@ -24,10 +25,12 @@ namespace GenericConfig
 		using String = std::string;
 		using Bool = bool;
 		using Number = double;
-		using List = std::vector<Value>;
-		using Dict = std::map<std::string, Value>;
+		using List = std::vector<std::shared_ptr<Value>>;
+		using Dict = std::map<std::string, std::shared_ptr<Value>>;
 		using Any = std::variant<None, String, Bool, Number, List, Dict>;
 
+		Value(Value&& _value) : type(_value.type), value(_value.value) {}
+		Value(const Value& _value) : type(_value.type), value(_value.value) {}
 		Value(Type _type, Any _value) : type(_type), value(_value) {}
 		Value(nullptr_t _value) : type(Type::NONE), value(_value) {}
 		Value(String& _value) : type(Type::STRING), value(_value) {}
@@ -69,7 +72,7 @@ namespace GenericConfig
 			Dict dict = As<Dict>();
 			auto found = dict.find(key);
 			if (found == dict.end()) return Value(Type::NONE, nullptr);
-			return found->second;
+			return *found->second;
 		}
 
 		Value Get(size_t index)
@@ -77,7 +80,7 @@ namespace GenericConfig
 			if (!IsList()) return Value(Type::NONE, nullptr);
 			List list = As<List>();
 			if (list.size() <= index) return Value(Type::NONE, nullptr);
-			return list.at(index);
+			return *list.at(index);
 		}
 
 		size_t GetSize()
@@ -157,8 +160,8 @@ namespace GenericConfig
 				for(size_t i = 0, size = list.size(); i < size; i++)
 				{
 					stream << getIndent(indentLevel + 1);
-					if (list[i].IsDict() || list[i].IsList()) stream << "\n";
-					stream << list[i].ToString(indentLevel + 1);
+					if (list[i]->IsDict() || list[i]->IsList()) stream << "\n";
+					stream << list[i]->ToString(indentLevel + 1);
 					if (i != size - 1) stream << ",";
 					stream << "\n";
 				}
@@ -173,8 +176,8 @@ namespace GenericConfig
 				for(auto it = dict.begin(); it != dict.end(); it++)
 				{
 					stream << getIndent(indentLevel + 1) << it->first << ": ";
-					if (it->second.IsDict() || it->second.IsList()) stream << "\n";
-					stream << it->second.ToString(indentLevel + 1);
+					if (it->second->IsDict() || it->second->IsList()) stream << "\n";
+					stream << it->second->ToString(indentLevel + 1);
 					if (it != --dict.end()) stream << ",";
 					stream << "\n";
 
@@ -189,14 +192,16 @@ namespace GenericConfig
 		Type type;
 		Any value;
 	};
+	using ValuePtr = std::shared_ptr<Value>;
 
 	template<class Derived>
 	class ConfigBase
 	{
 	public:
 		using Value = GenericConfig::Value;
+		using ValuePtr = GenericConfig::ValuePtr;
 
-		static Value Parse(const std::string& input)
+		static ValuePtr Parse(const std::string& input)
 		{
 			return Derived::Parse(input);
 		}
