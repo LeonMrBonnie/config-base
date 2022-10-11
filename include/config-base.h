@@ -12,6 +12,8 @@ namespace GenericConfig
 	class Value
 	{
 	public:
+		using ValuePtr = std::shared_ptr<Value>;
+
 		enum class Type : uint8_t
 		{
 			NONE,
@@ -25,8 +27,8 @@ namespace GenericConfig
 		using String = std::string;
 		using Bool = bool;
 		using Number = double;
-		using List = std::vector<std::shared_ptr<Value>>;
-		using Dict = std::map<std::string, std::shared_ptr<Value>>;
+		using List = std::vector<ValuePtr>;
+		using Dict = std::map<std::string, ValuePtr>;
 		using Any = std::variant<None, String, Bool, Number, List, Dict>;
 
 		Value(Value&& _value) : type(_value.type), value(_value.value) {}
@@ -66,21 +68,21 @@ namespace GenericConfig
 			}
 		}
 
-		Value Get(const std::string& key)
+		ValuePtr Get(const std::string& key)
 		{
-			if (!IsDict()) return Value(Type::NONE, nullptr);
+			if (!IsDict()) return std::make_shared<Value>(Type::NONE, nullptr);
 			Dict dict = As<Dict>();
 			auto found = dict.find(key);
-			if (found == dict.end()) return Value(Type::NONE, nullptr);
-			return *found->second;
+			if (found == dict.end()) return std::make_shared<Value>(Type::NONE, nullptr);
+			return found->second;
 		}
 
-		Value Get(size_t index)
+		ValuePtr Get(size_t index)
 		{
-			if (!IsList()) return Value(Type::NONE, nullptr);
+			if (!IsList()) return std::make_shared<Value>(Type::NONE, nullptr);
 			List list = As<List>();
-			if (list.size() <= index) return Value(Type::NONE, nullptr);
-			return *list.at(index);
+			if (list.size() <= index) return std::make_shared<Value>(Type::NONE, nullptr);
+			return list.at(index);
 		}
 
 		size_t GetSize()
@@ -90,15 +92,15 @@ namespace GenericConfig
 			return 0;
 		}
 
-		Value operator[](const std::string& key)
+		ValuePtr operator[](const std::string& key)
 		{
 			return Get(key);
 		}
-		Value operator[](const char* key)
+		ValuePtr operator[](const char* key)
 		{
 			return Get(key);
 		}
-		Value operator[](size_t index)
+		ValuePtr operator[](size_t index)
 		{
 			return Get(index);
 		}
@@ -192,14 +194,13 @@ namespace GenericConfig
 		Type type;
 		Any value;
 	};
-	using ValuePtr = std::shared_ptr<Value>;
 
 	template<class Derived>
 	class ConfigBase
 	{
 	public:
 		using Value = GenericConfig::Value;
-		using ValuePtr = GenericConfig::ValuePtr;
+		using ValuePtr = GenericConfig::Value::ValuePtr;
 
 		static ValuePtr Parse(const std::string& input)
 		{

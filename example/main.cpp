@@ -167,14 +167,15 @@ modules = [ "js-module" ]
 port = 7799
 )";
 
-void PrintConfigValues(Value& config)
+void PrintConfigValues(Value::ValuePtr config)
 {
-    std::cout << config.Get("name").As<std::string>() << std::endl;
-    std::cout << config["host"].As<std::string>() << std::endl;
-    std::cout << config.Get("port").As<int>() << std::endl;
-    std::cout << config.Get("debug").As<bool>() << std::endl;
-    std::cout << config.Get("modules").Get(0).As<std::string>() << std::endl;
-    std::cout << config.Get("js-module").Get("profiler").Get("port").As<int>() << std::endl;
+    std::cout << config->Get("name")->As<std::string>() << std::endl;
+    std::cout << config->Get("host")->As<std::string>() << std::endl;
+    std::cout << config->Get("port")->As<int>() << std::endl;
+    std::cout << config->Get("debug")->As<bool>() << std::endl;
+    std::cout << config->Get("modules")->Get(0)->As<std::string>() << std::endl;
+    std::cout << config->Get("js-module")->Get("profiler")->Get("port")->As<int>() << std::endl;
+    std::cout << config->Get("doesnotexist")->As<std::string>("default value") << std::endl;
 }
 
 int main(int, char**)
@@ -183,14 +184,14 @@ int main(int, char**)
         std::cout << "Parsing alt-config file..." << std::endl;
         std::shared_ptr<Value> config = AltConfig::Parse(altConfigFile);
         std::cout << config->ToString(true) << std::endl;
-        PrintConfigValues(*config);
+        PrintConfigValues(config);
     }
 
     {
         std::cout << "Parsing toml file..." << std::endl;
         std::shared_ptr<Value> config = TomlConfig::Parse(tomlConfigFile);
         std::cout << config->ToString(true) << std::endl;
-        PrintConfigValues(*config);
+        PrintConfigValues(config);
     }
 
 	return 0;
