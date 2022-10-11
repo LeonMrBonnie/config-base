@@ -1,0 +1,3 @@
+[submodule "deps/alt-config"]
+	path = deps/alt-config
+	url = git@github.com:altmp/alt-config.git
